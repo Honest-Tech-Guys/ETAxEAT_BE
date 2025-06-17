@@ -27,3 +27,4 @@ Route::get('/cuisines/filter', [CuisineController::class, 'filter']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/dishes', [DishController::class, 'index']);
+Route::get('/cuisines/nearest', [CuisineController::class, 'getNearest']);
