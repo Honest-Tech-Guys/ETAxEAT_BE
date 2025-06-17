@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CuisineController;
+use App\Http\Controllers\DishController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,3 +22,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/cuisines/grouped-by-category', [CuisineController::class, 'groupedByCategory']);
+
+Route::get('/cuisines/filter', [CuisineController::class, 'filter']);
+
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/dishes', [DishController::class, 'index']);

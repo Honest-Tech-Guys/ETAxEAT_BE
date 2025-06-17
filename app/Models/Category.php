@@ -10,7 +10,6 @@ class Category extends Model
 
     public function cuisines()
     {
-        return $this->hasMany(Cuisine::class);
+        return $this->belongsToMany(Cuisine::class, 'category_cuisine');
     }
 }
-

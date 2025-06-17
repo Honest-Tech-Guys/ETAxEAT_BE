@@ -12,10 +12,18 @@ class Cuisine extends Model
         'operating_hours' => 'array',
         'features' => 'array',
         'images' => 'array',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'rating' => 'double',
     ];
 
-    public function category()
+    public function categories()
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsToMany(Category::class, 'category_cuisine');
+    }
+
+    public function dishes()
+    {
+        return $this->belongsToMany(Dish::class, 'cuisine_dish');
     }
 }
