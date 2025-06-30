@@ -12,4 +12,8 @@ class Category extends Model
     {
         return $this->belongsToMany(Cuisine::class, 'category_cuisine');
     }
+    public function foodTrucks()
+    {
+        return $this->belongsToMany(FoodTruck::class, 'category_food_truck');
+    }
 }

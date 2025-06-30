@@ -16,4 +16,8 @@ class Dish extends Model
     {
         return $this->belongsToMany(Cuisine::class, 'cuisine_dish');
     }
+    public function foodTrucks()
+    {
+        return $this->belongsToMany(FoodTruck::class, 'dish_food_truck');
+    }
 }

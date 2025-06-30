@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CuisineController;
 use App\Http\Controllers\DishController;
+use App\Http\Controllers\FoodTruckController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -28,3 +29,7 @@ Route::get('/cuisines/filter', [CuisineController::class, 'filter']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/dishes', [DishController::class, 'index']);
 Route::get('/cuisines/nearest', [CuisineController::class, 'getNearest']);
+
+// New Food Truck Routes
+Route::get('/food-trucks/filter', [FoodTruckController::class, 'filter']);
+Route::get('/food-trucks/nearest', [FoodTruckController::class, 'getNearest']);
