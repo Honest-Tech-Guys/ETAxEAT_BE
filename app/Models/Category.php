@@ -8,6 +8,7 @@ use TCG\Voyager\Traits\Translatable;
 class Category extends Model
 {
     use Translatable;
+    protected $translatable = ['name', 'description'];
     protected $guarded = [];
 
     public function cuisines()

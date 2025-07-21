@@ -9,6 +9,7 @@ use TCG\Voyager\Traits\Translatable;
 class ProductType extends Model
 {
     use HasFactory , Translatable;
+    protected $translatable = ['name', 'description'];
     protected $guarded = [];
 
     public function natureProduces()

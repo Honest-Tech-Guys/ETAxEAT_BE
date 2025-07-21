@@ -9,6 +9,7 @@ use TCG\Voyager\Traits\Translatable;
 class Event extends Model
 {
     use HasFactory , Translatable;
+    protected $translatable = ['title', 'description'];
 
     protected $guarded = [];
 

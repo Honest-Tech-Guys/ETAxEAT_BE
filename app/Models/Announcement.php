@@ -10,6 +10,7 @@ class Announcement extends Model
 {
     use HasFactory , Translatable;
 
+    protected $translatable = ['title', 'content'];
     protected $guarded = [];
 
     protected $casts = [
