@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CuisineController;
 use App\Http\Controllers\DishController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\FoodTruckController;
 use App\Http\Controllers\RechargingStationController;
 use Illuminate\Http\Request;
@@ -36,3 +37,6 @@ Route::get('/food-trucks/nearest', [FoodTruckController::class, 'getNearest']);
 
 Route::get('/recharging-stations/filter', [RechargingStationController::class, 'filter']);
 Route::get('/recharging-stations/nearest', [RechargingStationController::class, 'getNearest']);
+
+Route::get('/events/filter', [EventController::class, 'filter']);
+Route::get('/events/nearest', [EventController::class, 'getNearest']);

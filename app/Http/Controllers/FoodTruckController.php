@@ -15,6 +15,32 @@ class FoodTruckController extends Controller
     {
         $query = FoodTruck::query();
 
+        // Add distance filtering if location data is provided
+        if ($request->has(['latitude', 'longitude', 'distance'])) {
+            $validator = Validator::make($request->all(), [
+                'latitude' => 'required|numeric|between:-90,90',
+                'longitude' => 'required|numeric|between:-180,180',
+                'distance' => 'required|numeric|min:0',
+            ]);
+
+            if (!$validator->fails()) {
+                $latitude = $request->latitude;
+                $longitude = $request->longitude;
+                $distance = $request->distance;
+                $radius = 6371;
+
+                $query->select('food_trucks.*')
+                    ->selectRaw(
+                        '(? * ACOS(COS(RADIANS(?)) * COS(RADIANS(latitude)) * COS(RADIANS(longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(latitude)))) AS distance',
+                        [$radius, $latitude, $longitude, $latitude]
+                    )
+                    ->whereNotNull(['latitude', 'longitude'])
+                    ->having('distance', '<=', $distance)
+                    ->orderBy('distance', 'asc');
+            }
+        }
+
+        // Existing filters
         if ($request->has('category')) {
             $query->whereHas('categories', function ($q) use ($request) {
                 $q->where('slug', $request->category);

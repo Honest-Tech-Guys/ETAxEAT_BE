@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\RechargingStation;
+use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-class RechargingStationController extends Controller
+class EventController extends Controller
 {
     public function filter(Request $request)
     {
-        $query = RechargingStation::query();
+        $query = Event::query();
 
         // Add distance filtering if location data is provided
         if ($request->has(['latitude', 'longitude', 'distance'])) {
@@ -26,7 +26,7 @@ class RechargingStationController extends Controller
                 $distance = $request->distance;
                 $radius = 6371;
 
-                $query->select('recharging_stations.*')
+                $query->select('events.*')
                     ->selectRaw(
                         '(? * ACOS(COS(RADIANS(?)) * COS(RADIANS(latitude)) * COS(RADIANS(longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(latitude)))) AS distance',
                         [$radius, $latitude, $longitude, $latitude]
@@ -38,33 +38,24 @@ class RechargingStationController extends Controller
         }
 
         // Existing filters
-        if ($request->has('recharging_category')) {
-            $query->whereHas('rechargingCategories', function ($q) use ($request) {
-                $q->where('slug', $request->recharging_category);
-            });
-        }
-        if ($request->has('charging_type')) {
-            $query->whereHas('chargingTypes', function ($q) use ($request) {
-                $q->where('slug', $request->charging_type);
-            });
-        }
-        if ($request->has('vehicle_type')) {
-            $query->whereHas('vehicleTypes', function ($q) use ($request) {
-                $q->where('slug', $request->vehicle_type);
-            });
-        }
-        if ($request->has('charging_power')) {
-            $query->whereHas('chargingPowers', function ($q) use ($request) {
-                $q->where('slug', 'like', '%' . $request->charging_power . '%');
+        if ($request->has('event_category')) {
+            $query->whereHas('eventCategories', function ($q) use ($request) {
+                $q->where('slug', $request->event_category);
             });
         }
 
-        $stations = $query->with(['rechargingCategories', 'chargingTypes', 'vehicleTypes', 'chargingPowers'])->get();
+        if ($request->has('event_type')) {
+            $query->whereHas('eventTypes', function ($q) use ($request) {
+                $q->where('slug', $request->event_type);
+            });
+        }
+
+        $events = $query->with(['eventCategories', 'eventTypes'])->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Recharging stations filtered successfully.',
-            'data' => $stations
+            'message' => 'Events filtered successfully.',
+            'data' => $events
         ]);
     }
 
@@ -87,8 +78,8 @@ class RechargingStationController extends Controller
         $longitude = $request->longitude;
         $radius = 6371; // Earth's radius in kilometers
 
-        $stations = RechargingStation::query()
-            ->select('recharging_stations.*')
+        $events = Event::query()
+            ->select('events.*')
             ->selectRaw(
                 '(? * ACOS(COS(RADIANS(?)) * COS(RADIANS(latitude)) * COS(RADIANS(longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(latitude)))) AS distance',
                 [$radius, $latitude, $longitude, $latitude]
@@ -100,8 +91,8 @@ class RechargingStationController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Nearest 5 recharging stations retrieved successfully.',
-            'data' => $stations
+            'message' => 'Nearest 5 events retrieved successfully.',
+            'data' => $events
         ]);
     }
 }
