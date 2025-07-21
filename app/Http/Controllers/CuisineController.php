@@ -26,7 +26,8 @@ class CuisineController extends Controller
 
     public function filter(Request $request)
     {
-        $query = Cuisine::query();
+        // Start the query with the withTranslation() scope
+        $query = Cuisine::withTranslation();
 
         // Add distance filtering if location data is provided
         if ($request->has(['latitude', 'longitude', 'distance'])) {
@@ -39,8 +40,8 @@ class CuisineController extends Controller
             if (!$validator->fails()) {
                 $latitude = $request->latitude;
                 $longitude = $request->longitude;
-                $distance = $request->distance; // in kilometers
-                $radius = 6371; // Earth's radius
+                $maxDistance = $request->distance;
+                $radius = 6371;
 
                 $query->select('cuisines.*')
                     ->selectRaw(
@@ -48,25 +49,32 @@ class CuisineController extends Controller
                         [$radius, $latitude, $longitude, $latitude]
                     )
                     ->whereNotNull(['latitude', 'longitude'])
-                    ->having('distance', '<=', $distance)
+                    ->having('distance', '<=', $maxDistance)
                     ->orderBy('distance', 'asc');
             }
         }
 
-        // Existing filters
+        // Apply other existing filters
         if ($request->has('category')) {
             $query->whereHas('categories', function ($q) use ($request) {
                 $q->where('slug', $request->category);
             });
         }
-
         if ($request->has('dish')) {
             $query->whereHas('dishes', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->dish . '%');
+                $q->where('slug', $request->dish); // Assuming you added slug to dishes
             });
         }
 
-        $cuisines = $query->with(['categories', 'dishes'])->get();
+        // Eager load relationships and their translations
+        $cuisines = $query->with([
+            'categories' => function ($q) {
+                $q->withTranslation();
+            },
+            'dishes' => function ($q) {
+                $q->withTranslation();
+            }
+        ])->get();
 
         return response()->json([
             'success' => true,

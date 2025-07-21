@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use TCG\Voyager\Traits\Translatable;
 
 class Cuisine extends Model
 {
+    use Translatable;
+
+    protected $translatable = ['name', 'about', 'description'];
     protected $guarded = [];
 
     protected $casts = [
