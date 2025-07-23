@@ -16,7 +16,7 @@ class NatureProduceController extends Controller
         $query = NatureProduce::query();
 
         // Add distance filtering if location data is provided
-        if ($request->hasAll(['latitude', 'longitude', 'distance'])) {
+        if ($request->has(['latitude', 'longitude', 'distance'])) {
             $validator = Validator::make($request->all(), [
                 'latitude' => 'required|numeric|between:-90,90',
                 'longitude' => 'required|numeric|between:-180,180',
