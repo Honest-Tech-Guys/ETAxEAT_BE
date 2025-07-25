@@ -37,6 +37,17 @@ class EventController extends Controller
             }
         }
 
+        if ($request->has(['start_date', 'end_date'])) {
+            $validator = Validator::make($request->all(), [
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date'
+            ]);
+
+            if (!$validator->fails()) {
+                $query->whereBetween('start_date', [$request->start_date, $request->end_date]);
+            }
+        }
+
         // Existing filters
         if ($request->has('event_category')) {
             $query->whereHas('eventCategories', function ($q) use ($request) {
