@@ -44,7 +44,7 @@ class EventController extends Controller
             ]);
 
             if (!$validator->fails()) {
-                $query->whereBetween('start_date', [$request->start_date, $request->end_date]);
+                $query->whereBetween('start_time', [$request->start_date, $request->end_date]);
             }
         }
 
