@@ -36,9 +36,8 @@ class FoodTruck extends Model
     {
         // **THE FIX:** Manually decode the JSON string into an array.
         // We use true to get an associative array.
-        $hoursArray = json_decode($value, true);
+        $hoursArray = json_decode($this->getRawOriginal('operating_hours'), true);
 
-        // Now, this check will work correctly. We also check for JSON errors.
         if (json_last_error() !== JSON_ERROR_NONE || empty($hoursArray) || !is_array($hoursArray)) {
             return 'Not Set';
         }
