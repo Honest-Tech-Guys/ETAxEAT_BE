@@ -1,28 +1,34 @@
 @php
     $fieldName = $row->field;
-    $structuredHours = [];
+    $hoursData = []; // This will be our final, structured array
 
+    // First, check for 'old' input from a failed validation
     if (old($fieldName)) {
-        $oldData = old($fieldName);
-        if (isset($oldData['day']) && is_array($oldData['day'])) {
-            for ($i = 0; $i < count($oldData['day']); $i++) {
-                $day = $oldData['day'][$i];
-                if (!isset($structuredHours[$day])) {
-                    $structuredHours[$day] = [];
+        $oldInput = old($fieldName);
+        if (isset($oldInput['day']) && is_array($oldInput['day'])) {
+            for ($i = 0; $i < count($oldInput['day']); $i++) {
+                $day = $oldInput['day'][$i];
+                if (!isset($hoursData[$day])) {
+                    $hoursData[$day] = [];
                 }
-                $structuredHours[$day][] = [
-                    'open' => $oldData['open'][$i] ?? '',
-                    'close' => $oldData['close'][$i] ?? '',
+                $hoursData[$day][] = [
+                    'open' => $oldInput['open'][$i] ?? '',
+                    'close' => $oldInput['close'][$i] ?? '',
                 ];
             }
         }
     } else {
-        $rawDbData = $dataTypeContent->getRawOriginal($fieldName) ?? '[]';
-        $structuredHours = json_decode($rawDbData, true);
-    }
-    
-    if (!is_array($structuredHours)) {
-        $structuredHours = [];
+        // If no 'old' input, get the raw JSON string from the database
+        $rawJson = $dataTypeContent->getRawOriginal($fieldName);
+        
+        // Decode the JSON into a PHP array
+        if (!empty($rawJson)) {
+            $decodedData = json_decode($rawJson, true);
+            // Ensure decoding was successful and resulted in an array
+            if (is_array($decodedData)) {
+                $hoursData = $decodedData;
+            }
+        }
     }
 @endphp
 
@@ -37,9 +43,9 @@
             </tr>
         </thead>
         <tbody>
-            @if(!empty($structuredHours))
-                @foreach($structuredHours as $day => $slots)
-                    @if(is_array($slots))
+            @if(!empty($hoursData))
+                @foreach($hoursData as $day => $slots)
+                    @if(is_array($slots) && !empty($slots))
                         @foreach($slots as $slot)
                             <tr>
                                 <td>
