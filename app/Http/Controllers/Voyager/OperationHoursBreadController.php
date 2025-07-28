@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Voyager;
 use Illuminate\Http\Request;
 use TCG\Voyager\Http\Controllers\VoyagerBaseController;
 
-class CuisineBreadController extends VoyagerBaseController
+class OperationHoursBreadController extends VoyagerBaseController
 {
     // This function will run INSTEAD of the default Voyager update method.
     public function update(Request $request, $id)

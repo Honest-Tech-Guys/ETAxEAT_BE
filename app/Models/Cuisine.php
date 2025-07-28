@@ -22,21 +22,23 @@ class Cuisine extends Model
         'rating' => 'double',
     ];
 
-    /**
+     /**
      * Accessor for the operating_hours attribute.
      *
      * This method automatically formats the operating hours array into a
      * readable HTML string for display in Voyager's Browse and Read views.
      *
-     * @param  array  $value
+     * @param  string|null  $value The raw JSON string from the database.
      * @return string
      */
     public function getOperatingHoursAttribute($value)
     {
-        // The $casts property has already converted the JSON to an array
-        $hoursArray = $value;
+        // **THE FIX:** Manually decode the JSON string into an array.
+        // We use true to get an associative array.
+        $hoursArray = json_decode($value, true);
 
-        if (empty($hoursArray) || !is_array($hoursArray)) {
+        // Now, this check will work correctly. We also check for JSON errors.
+        if (json_last_error() !== JSON_ERROR_NONE || empty($hoursArray) || !is_array($hoursArray)) {
             return 'Not Set';
         }
 
@@ -45,7 +47,8 @@ class Cuisine extends Model
 
         // Loop through days in order to ensure consistent display
         foreach ($daysOfWeek as $day) {
-            if (!empty($hoursArray[$day])) {
+            // Check if the key exists and the array for that day is not empty
+            if (isset($hoursArray[$day]) && !empty($hoursArray[$day])) {
                 $daySlots = [];
                 foreach ($hoursArray[$day] as $slot) {
                     // Ensure keys exist to prevent errors
@@ -62,7 +65,8 @@ class Cuisine extends Model
             return 'Closed';
         }
 
-        return implode('<br>', $display);
+        // Use new Raw HTML helper to prevent Blade from escaping the HTML tags
+        return new \Illuminate\Support\HtmlString(implode('<br>', $display));
     }
 
     public function categories()
