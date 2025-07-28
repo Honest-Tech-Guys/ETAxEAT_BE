@@ -30,4 +30,12 @@ class Cuisine extends Model
     {
         return $this->belongsToMany(Dish::class, 'cuisine_dish');
     }
+    public function cuisineTypes()
+    {
+        return $this->belongsToMany(CuisineType::class, 'cuisine_type_cuisine');
+    }
+    public function dishCategories()
+    {
+        return $this->belongsToMany(DishCategory::class, 'cuisine_dish_category');
+    }
 }
