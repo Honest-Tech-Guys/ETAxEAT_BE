@@ -26,8 +26,8 @@ class CuisineController extends Controller
 
     public function filter(Request $request)
     {
-        // Start the query with the withTranslation() scope
-        $query = Cuisine::withTranslation();
+        // Start the query with the withTranslation() scope and filter active cuisines
+        $query = Cuisine::withTranslation()->where('is_active', true);
 
         // Add distance filtering if location data is provided
         if ($request->has(['latitude', 'longitude', 'distance'])) {

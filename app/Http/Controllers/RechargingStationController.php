@@ -10,7 +10,7 @@ class RechargingStationController extends Controller
 {
     public function filter(Request $request)
     {
-        $query = RechargingStation::query();
+        $query = RechargingStation::withTranslation()->where('is_active', true);
 
         // Add distance filtering if location data is provided
         if ($request->has(['latitude', 'longitude', 'distance'])) {
