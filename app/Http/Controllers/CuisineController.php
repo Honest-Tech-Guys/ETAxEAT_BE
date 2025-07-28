@@ -60,6 +60,16 @@ class CuisineController extends Controller
                 $q->where('slug', $request->category);
             });
         }
+        if ($request->has('cuisine_type')) {
+            $query->whereHas('cuisineTypes', function ($q) use ($request) {
+                $q->where('slug', $request->cuisine_type);
+            });
+        }
+        if ($request->has('dish_category')) {
+            $query->whereHas('dishCategories', function ($q) use ($request) {
+                $q->where('slug', $request->dish_category);
+            });
+        }
         if ($request->has('dish')) {
             $query->whereHas('dishes', function ($q) use ($request) {
                 $q->where('slug', $request->dish); // Assuming you added slug to dishes
@@ -72,6 +82,12 @@ class CuisineController extends Controller
                 $q->withTranslation();
             },
             'dishes' => function ($q) {
+                $q->withTranslation();
+            },
+            'cuisineTypes' => function ($q) {
+                $q->withTranslation();
+            },
+            'dishCategories' => function ($q) {
                 $q->withTranslation();
             }
         ])->get();
