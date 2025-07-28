@@ -72,7 +72,7 @@ class CuisineController extends Controller
         }
         if ($request->has('dish')) {
             $query->whereHas('dishes', function ($q) use ($request) {
-                $q->where('slug', $request->dish); // Assuming you added slug to dishes
+                $q->where('slug', $request->dish);
             });
         }
 

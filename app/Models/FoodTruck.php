@@ -37,4 +37,14 @@ class FoodTruck extends Model
     {
         return $this->belongsToMany(Dish::class, 'dish_food_truck');
     }
+
+    public function dishCategories()
+    {
+        return $this->belongsToMany(DishCategory::class, 'foodtruck_dish_category');
+    }
+
+    public function foodTruckTypes()
+    {
+        return $this->belongsToMany(FoodTruckType::class, 'foodtruck_type_foodtruck');
+    }
 }

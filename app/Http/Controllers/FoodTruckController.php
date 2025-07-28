@@ -46,6 +46,16 @@ class FoodTruckController extends Controller
                 $q->where('slug', $request->category);
             });
         }
+        if ($request->has('dish_category')) {
+            $query->whereHas('dishCategories', function ($q) use ($request) {
+                $q->where('slug', $request->dish_category);
+            });
+        }
+        if ($request->has('foodtruck_type')) {
+            $query->whereHas('foodTruckTypes', function ($q) use ($request) {
+                $q->where('slug', $request->foodtruck_type);
+            });
+        }
 
         if ($request->has('dish')) {
             $query->whereHas('dishes', function ($q) use ($request) {
@@ -53,7 +63,20 @@ class FoodTruckController extends Controller
             });
         }
 
-        $foodTrucks = $query->with(['categories', 'dishes'])->get();
+        $foodTrucks = $query->with([
+            'categories' => function ($q) {
+                $q->withTranslation();
+            },
+            'dishes' => function ($q) {
+                $q->withTranslation();
+            },
+            'foodTruckTypes' => function ($q) {
+                $q->withTranslation();
+            },
+            'dishCategories' => function ($q) {
+                $q->withTranslation();
+            }
+        ])->get();
 
         return response()->json([
             'success' => true,
