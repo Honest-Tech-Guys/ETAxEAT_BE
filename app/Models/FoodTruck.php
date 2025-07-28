@@ -32,42 +32,42 @@ class FoodTruck extends Model
      * @param  string|null  $value The raw JSON string from the database.
      * @return string
      */
-    public function getOperatingHoursAttribute($value)
-    {
-        // **THE FIX:** Manually decode the JSON string into an array.
-        // We use true to get an associative array.
-        $hoursArray = json_decode($this->getRawOriginal('operating_hours'), true);
+    // public function getOperatingHoursAttribute($value)
+    // {
+    //     // **THE FIX:** Manually decode the JSON string into an array.
+    //     // We use true to get an associative array.
+    //     $hoursArray = json_decode($this->getRawOriginal('operating_hours'), true);
 
-        if (json_last_error() !== JSON_ERROR_NONE || empty($hoursArray) || !is_array($hoursArray)) {
-            return 'Not Set';
-        }
+    //     if (json_last_error() !== JSON_ERROR_NONE || empty($hoursArray) || !is_array($hoursArray)) {
+    //         return 'Not Set';
+    //     }
 
-        $display = [];
-        $daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    //     $display = [];
+    //     $daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-        // Loop through days in order to ensure consistent display
-        foreach ($daysOfWeek as $day) {
-            // Check if the key exists and the array for that day is not empty
-            if (isset($hoursArray[$day]) && !empty($hoursArray[$day])) {
-                $daySlots = [];
-                foreach ($hoursArray[$day] as $slot) {
-                    // Ensure keys exist to prevent errors
-                    $open = $slot['open'] ?? 'N/A';
-                    $close = $slot['close'] ?? 'N/A';
-                    // Format times for readability (e.g., 9:00 AM - 5:00 PM)
-                    $daySlots[] = date('g:i a', strtotime($open)) . ' - ' . date('g:i a', strtotime($close));
-                }
-                $display[] = '<strong>' . ucfirst($day) . ':</strong> ' . implode(', ', $daySlots);
-            }
-        }
+    //     // Loop through days in order to ensure consistent display
+    //     foreach ($daysOfWeek as $day) {
+    //         // Check if the key exists and the array for that day is not empty
+    //         if (isset($hoursArray[$day]) && !empty($hoursArray[$day])) {
+    //             $daySlots = [];
+    //             foreach ($hoursArray[$day] as $slot) {
+    //                 // Ensure keys exist to prevent errors
+    //                 $open = $slot['open'] ?? 'N/A';
+    //                 $close = $slot['close'] ?? 'N/A';
+    //                 // Format times for readability (e.g., 9:00 AM - 5:00 PM)
+    //                 $daySlots[] = date('g:i a', strtotime($open)) . ' - ' . date('g:i a', strtotime($close));
+    //             }
+    //             $display[] = '<strong>' . ucfirst($day) . ':</strong> ' . implode(', ', $daySlots);
+    //         }
+    //     }
 
-        if (empty($display)) {
-            return 'Closed';
-        }
+    //     if (empty($display)) {
+    //         return 'Closed';
+    //     }
 
-        // Use new Raw HTML helper to prevent Blade from escaping the HTML tags
-        return new \Illuminate\Support\HtmlString(implode('<br>', $display));
-    }
+    //     // Use new Raw HTML helper to prevent Blade from escaping the HTML tags
+    //     return new \Illuminate\Support\HtmlString(implode('<br>', $display));
+    // }
     /**
      * The categories that belong to the food truck.
      */
