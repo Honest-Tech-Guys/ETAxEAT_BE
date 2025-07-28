@@ -22,6 +22,49 @@ class Cuisine extends Model
         'rating' => 'double',
     ];
 
+    /**
+     * Accessor for the operating_hours attribute.
+     *
+     * This method automatically formats the operating hours array into a
+     * readable HTML string for display in Voyager's Browse and Read views.
+     *
+     * @param  array  $value
+     * @return string
+     */
+    public function getOperatingHoursAttribute($value)
+    {
+        // The $casts property has already converted the JSON to an array
+        $hoursArray = $value;
+
+        if (empty($hoursArray) || !is_array($hoursArray)) {
+            return 'Not Set';
+        }
+
+        $display = [];
+        $daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+        // Loop through days in order to ensure consistent display
+        foreach ($daysOfWeek as $day) {
+            if (!empty($hoursArray[$day])) {
+                $daySlots = [];
+                foreach ($hoursArray[$day] as $slot) {
+                    // Ensure keys exist to prevent errors
+                    $open = $slot['open'] ?? 'N/A';
+                    $close = $slot['close'] ?? 'N/A';
+                    // Format times for readability (e.g., 9:00 AM - 5:00 PM)
+                    $daySlots[] = date('g:i a', strtotime($open)) . ' - ' . date('g:i a', strtotime($close));
+                }
+                $display[] = '<strong>' . ucfirst($day) . ':</strong> ' . implode(', ', $daySlots);
+            }
+        }
+
+        if (empty($display)) {
+            return 'Closed';
+        }
+
+        return implode('<br>', $display);
+    }
+
     public function categories()
     {
         return $this->belongsToMany(Category::class, 'category_cuisine');
