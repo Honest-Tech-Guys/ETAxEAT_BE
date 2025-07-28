@@ -12,6 +12,7 @@ class ProducerType extends Model
     protected $translatable = ['name', 'description'];
     protected $guarded = [];
 
+    protected $fillable = ['name', 'description', 'is_active'];
     public function natureProduces()
     {
         return $this->belongsToMany(NatureProduce::class, 'nature_produce_producer_type');

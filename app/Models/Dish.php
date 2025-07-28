@@ -13,6 +13,7 @@ class Dish extends Model
 
     protected $guarded = [];
 
+    protected $fillable = ['name', 'description', 'price', 'images', 'is_active'];
     // Updated relationship
     public function cuisines()
     {

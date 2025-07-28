@@ -13,6 +13,7 @@ class Announcement extends Model
     protected $translatable = ['title', 'content'];
     protected $guarded = [];
 
+    protected $fillable = ['title', 'content', 'publish_at', 'images', 'is_active'];
     protected $casts = [
         'publish_at' => 'datetime',
         'images' => 'array',

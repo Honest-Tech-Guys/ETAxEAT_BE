@@ -11,6 +11,7 @@ class CuisineType extends Model
     protected $translatable = ['name', 'description'];
     protected $guarded = [];
 
+    protected $fillable = ['name', 'description', 'is_active'];
     public function cuisines()
     {
         return $this->belongsToMany(Cuisine::class, 'cuisine_type_cuisine');

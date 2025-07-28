@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('foodtruck_type_foodtruck', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('foodtruck_id')->constrained('food_trucks')->onDelete('cascade');
-            $table->foreignId('foodtruck_type_id')->constrained('food_truck_types')->onDelete('cascade');
+            $table->foreignId('food_truck_id')->constrained('food_trucks')->onDelete('cascade');
+            $table->foreignId('food_truck_type_id')->constrained('food_truck_types')->onDelete('cascade');
             $table->timestamps();
         });
     }

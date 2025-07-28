@@ -12,6 +12,7 @@ class FoodTruckType extends Model
     protected $translatable = ['name', 'description'];
     protected $guarded = [];
 
+    protected $fillable = ['name', 'description', 'is_active'];
     public function FoodTrucks()
     {
         return $this->belongsToMany(FoodTruck::class, 'foodtruck_type_foodtruck');

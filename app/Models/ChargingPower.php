@@ -12,6 +12,8 @@ class ChargingPower extends Model
     protected $translatable = ['name', 'description'];
     protected $guarded = [];
 
+    protected $fillable = ['name', 'description', 'is_active'];
+
     public function rechargingStations()
     {
         return $this->belongsToMany(RechargingStation::class, 'charging_power_station');

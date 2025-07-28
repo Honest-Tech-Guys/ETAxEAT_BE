@@ -13,6 +13,7 @@ class RechargingStation extends Model
 
     protected $guarded = [];
 
+    protected $fillable = ['name', 'description', 'operating_hours', 'features', 'images', 'latitude', 'longitude', 'rating', 'is_active'];
     protected $casts = [
         'operating_hours' => 'array',
         'features' => 'array',

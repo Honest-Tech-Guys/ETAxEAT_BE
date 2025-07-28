@@ -12,6 +12,7 @@ class EventType extends Model
     protected $translatable = ['name', 'description'];
     protected $guarded = [];
 
+    protected $fillable = ['name', 'description', 'is_active'];
     public function events()
     {
         return $this->belongsToMany(Event::class, 'event_type_event');

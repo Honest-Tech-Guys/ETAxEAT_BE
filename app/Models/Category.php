@@ -9,6 +9,7 @@ class Category extends Model
 {
     use Translatable;
     protected $translatable = ['name', 'description'];
+    protected $fillable = ['name', 'description', 'is_active'];
     protected $guarded = [];
 
     public function cuisines()
