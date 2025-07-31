@@ -28,7 +28,7 @@ class CuisineController extends Controller
     {
         // Start the query with the withTranslation() scope and filter active cuisines
         $query = Cuisine::withTranslation()->where('is_active', true);
-
+        
         // Add distance filtering if location data is provided
         if ($request->has(['latitude', 'longitude', 'distance'])) {
             $validator = Validator::make($request->all(), [
@@ -41,7 +41,7 @@ class CuisineController extends Controller
                 $latitude = $request->latitude;
                 $longitude = $request->longitude;
                 $maxDistance = $request->distance;
-                $radius = 6371;
+                $radius = 6371; // Earth's radius in kilometers
 
                 $query->select('cuisines.*')
                     ->selectRaw(
@@ -53,43 +53,45 @@ class CuisineController extends Controller
                     ->orderBy('distance', 'asc');
             }
         }
+        
+        // UPDATED: Apply category filter for multiple selections
+        if ($request->has('category') && !empty($request->input('category'))) {
+            $json = str_replace("'", '"', $request->input('category'));
+            $query->whereHas('categories', function ($q) use ($json) {
+                $q->whereIn('slug', json_decode($json, true));
+            });
+        }
+        
+        // UPDATED: Apply cuisine_type filter for multiple selections
+        if ($request->has('cuisine_type') && !empty($request->input('cuisine_type'))) {
+            $json = str_replace("'", '"', $request->input('cuisine_type'));
+            $query->whereHas('cuisineTypes', function ($q) use ($json) {
+                $q->whereIn('slug', json_decode($json, true));
+            });
+        }
 
-        // Apply other existing filters
-        if ($request->has('category')) {
-            $query->whereHas('categories', function ($q) use ($request) {
-                $q->where('slug', $request->category);
+        // UPDATED: Apply dish_category filter for multiple selections
+        if ($request->has('dish_category') && !empty($request->input('dish_category'))) {
+            $json = str_replace("'", '"', $request->input('dish_category'));
+            $query->whereHas('dishCategories', function ($q) use ($json) {
+                $q->whereIn('slug', json_decode($json, true));
             });
         }
-        if ($request->has('cuisine_type')) {
-            $query->whereHas('cuisineTypes', function ($q) use ($request) {
-                $q->where('slug', $request->cuisine_type);
-            });
-        }
-        if ($request->has('dish_category')) {
-            $query->whereHas('dishCategories', function ($q) use ($request) {
-                $q->where('slug', $request->dish_category);
-            });
-        }
-        if ($request->has('dish')) {
-            $query->whereHas('dishes', function ($q) use ($request) {
-                $q->where('slug', $request->dish);
+
+        // UPDATED: Apply dish filter for multiple selections
+        if ($request->has('dish') && !empty($request->input('dish'))) {
+            $json = str_replace("'", '"', $request->input('dish'));
+            $query->whereHas('dishes', function ($q) use ($json) {
+                $q->whereIn('slug', json_decode($json, true));
             });
         }
 
         // Eager load relationships and their translations
         $cuisines = $query->with([
-            'categories' => function ($q) {
-                $q->withTranslation();
-            },
-            'dishes' => function ($q) {
-                $q->withTranslation();
-            },
-            'cuisineTypes' => function ($q) {
-                $q->withTranslation();
-            },
-            'dishCategories' => function ($q) {
-                $q->withTranslation();
-            }
+            'categories' => function ($q) { $q->withTranslation(); },
+            'dishes' => function ($q) { $q->withTranslation(); },
+            'cuisineTypes' => function ($q) { $q->withTranslation(); },
+            'dishCategories' => function ($q) { $q->withTranslation(); }
         ])->get();
 
         return response()->json([
