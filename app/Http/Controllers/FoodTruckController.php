@@ -41,25 +41,29 @@ class FoodTruckController extends Controller
         }
 
         // Existing filters
-        if ($request->has('category')) {
-            $query->whereHas('categories', function ($q) use ($request) {
-                $q->where('slug', $request->category);
+        if ($request->has('category') && !empty($request->input('category'))) {
+            $json = str_replace("'", '"', $request->input('category'));
+            $query->whereHas('categories', function ($q) use ($json) {
+                $q->whereIn('slug', json_decode($json, true));
             });
         }
-        if ($request->has('dish_category')) {
-            $query->whereHas('dishCategories', function ($q) use ($request) {
-                $q->where('slug', $request->dish_category);
+        if ($request->has('dish_category') && !empty($request->input('dish_category'))) {
+            $json = str_replace("'", '"', $request->input('dish_category'));
+            $query->whereHas('dishCategories', function ($q) use ($json) {
+                $q->whereIn('slug', json_decode($json, true));
             });
         }
-        if ($request->has('foodtruck_type')) {
-            $query->whereHas('foodTruckTypes', function ($q) use ($request) {
-                $q->where('slug', $request->foodtruck_type);
+        if ($request->has('foodtruck_type') && !empty($request->input('foodtruck_type'))) {
+            $json = str_replace("'", '"', $request->input('foodtruck_type'));
+            $query->whereHas('foodTruckTypes', function ($q) use ($json) {
+                $q->whereIn('slug', json_decode($json, true));
             });
         }
 
         if ($request->has('dish')) {
-            $query->whereHas('dishes', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->dish . '%');
+            $json = str_replace("'", '"', $request->input('dish'));
+            $query->whereHas('dishes', function ($q) use ($json) {
+                $q->whereIn('slug', json_decode($json, true));
             });
         }
 
