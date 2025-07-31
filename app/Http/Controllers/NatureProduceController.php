@@ -41,16 +41,18 @@ class NatureProduceController extends Controller
         }
 
         // Filter by Producer Type
-        if ($request->has('producer_type')) {
-            $query->whereHas('producerTypes', function ($q) use ($request) {
-                $q->where('slug', $request->producer_type);
+        if ($request->has('producer_type') && !empty($request->input('producer_type'))) {
+            $json = str_replace("'", '"', $request->input('producer_type'));
+            $query->whereHas('producerTypes', function ($q) use ($json) {
+            $q->whereIn('slug', json_decode($json, true));
             });
         }
 
         // Filter by Product Type
-        if ($request->has('product_type')) {
-            $query->whereHas('productTypes', function ($q) use ($request) {
-                $q->where('slug', $request->product_type);
+        if ($request->has('product_type') && !empty($request->input('product_type'))) {
+            $json = str_replace("'", '"', $request->input('product_type'));
+            $query->whereHas('productTypes', function ($q) use ($json) {
+            $q->whereIn('slug', json_decode($json, true));
             });
         }
 

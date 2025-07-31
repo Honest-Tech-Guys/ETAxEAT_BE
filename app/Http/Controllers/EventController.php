@@ -48,16 +48,18 @@ class EventController extends Controller
             }
         }
 
-        // Existing filters
-        if ($request->has('event_category')) {
-            $query->whereHas('eventCategories', function ($q) use ($request) {
-                $q->where('slug', $request->event_category);
+        // Updated filters
+        if ($request->has('event_category') && !empty($request->input('event_category'))) {
+            $json = str_replace("'", '"', $request->input('event_category'));
+            $query->whereHas('eventCategories', function ($q) use ($json) {
+            $q->whereIn('slug', json_decode($json, true));
             });
         }
 
-        if ($request->has('event_type')) {
-            $query->whereHas('eventTypes', function ($q) use ($request) {
-                $q->where('slug', $request->event_type);
+        if ($request->has('event_type') && !empty($request->input('event_type'))) {
+            $json = str_replace("'", '"', $request->input('event_type'));
+            $query->whereHas('eventTypes', function ($q) use ($json) {
+            $q->whereIn('slug', json_decode($json, true));
             });
         }
 

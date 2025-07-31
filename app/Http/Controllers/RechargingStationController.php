@@ -38,24 +38,28 @@ class RechargingStationController extends Controller
         }
 
         // Existing filters
-        if ($request->has('recharging_category')) {
-            $query->whereHas('rechargingCategories', function ($q) use ($request) {
-                $q->where('slug', $request->recharging_category);
+        if ($request->has('recharging_category') && !empty($request->input('recharging_category'))) {
+            $json = str_replace("'", '"', $request->input('recharging_category'));
+            $query->whereHas('rechargingCategories', function ($q) use ($json) {
+            $q->whereIn('slug', json_decode($json, true));
             });
         }
-        if ($request->has('charging_type')) {
-            $query->whereHas('chargingTypes', function ($q) use ($request) {
-                $q->where('slug', $request->charging_type);
+        if ($request->has('charging_type') && !empty($request->input('charging_type'))) {
+            $json = str_replace("'", '"', $request->input('charging_type'));
+            $query->whereHas('chargingTypes', function ($q) use ($json) {
+            $q->whereIn('slug', json_decode($json, true));
             });
         }
-        if ($request->has('vehicle_type')) {
-            $query->whereHas('vehicleTypes', function ($q) use ($request) {
-                $q->where('slug', $request->vehicle_type);
+        if ($request->has('vehicle_type') && !empty($request->input('vehicle_type'))) {
+            $json = str_replace("'", '"', $request->input('vehicle_type'));
+            $query->whereHas('vehicleTypes', function ($q) use ($json) {
+            $q->whereIn('slug', json_decode($json, true));
             });
         }
-        if ($request->has('charging_power')) {
-            $query->whereHas('chargingPowers', function ($q) use ($request) {
-                $q->where('slug', 'like', '%' . $request->charging_power . '%');
+        if ($request->has('charging_power') && !empty($request->input('charging_power'))) {
+            $json = str_replace("'", '"', $request->input('charging_power'));
+            $query->whereHas('chargingPowers', function ($q) use ($json) {
+            $q->whereIn('slug', json_decode($json, true));
             });
         }
 
