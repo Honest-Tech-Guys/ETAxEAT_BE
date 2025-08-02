@@ -16,6 +16,7 @@ class Cuisine extends Model
     protected $casts = [
         'operating_hours' => 'array',
         'features' => 'array',
+        'food_menu' => 'array',
         'images' => 'array',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',

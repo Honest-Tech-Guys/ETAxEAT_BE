@@ -21,6 +21,7 @@ class FoodTruck extends Model
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
         'rating' => 'double',
+        'food_menu' => 'array',
     ];
 
     /**
