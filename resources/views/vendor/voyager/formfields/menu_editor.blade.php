@@ -3,6 +3,7 @@ Full path: resources/views/vendor/voyager/formfields/menu_editor.blade.php
 This file creates a dynamic menu editor for Voyager that launches in a modal.
 It allows adding/removing categories and dishes, including an image for each dish.
 The entire menu structure is saved as a single JSON object in a hidden textarea.
+FIXED: Now properly uploads images to server storage.
 -->
 
 @php
@@ -49,6 +50,9 @@ The entire menu structure is saved as a single JSON object in a hidden textarea.
         });
     }
 @endphp
+
+<!-- Add CSRF token for uploads -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
 <!-- This hidden textarea holds the final JSON data that Voyager will save -->
 <textarea
@@ -169,13 +173,18 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="input-group">
                                 <input type="text" class="form-control menu-dish-image" value="${dish.image || ''}" placeholder="Select an image...">
                                 <span class="input-group-btn">
-                                    <button class="btn btn-primary select-image-btn" type="button" data-toggle="modal" data-target="#media_picker">
-                                        <i class="voyager-images"></i> Browse
+                                    <button class="btn btn-success upload-image-btn" type="button" style="margin-top:0;margin-bottom:0;">
+                                        <i class="voyager-upload"></i> Upload
                                     </button>
                                 </span>
                             </div>
                             <div class="image-preview" style="margin-top: 10px;">
                                 ${dish.image ? `<img src="${dish.image.startsWith('http') || dish.image.startsWith('/') || dish.image.startsWith('data:') ? dish.image : '/storage/' + dish.image}" style="max-width: 100px; max-height: 100px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none'">` : ''}
+                            </div>
+                            <div class="upload-progress" style="margin-top: 5px; display: none;">
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -431,6 +440,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 openMediaPicker(e.target);
                 return;
             }
+            
+            // NEW: Handle upload image button
+            if (e.target.closest('.upload-image-btn')) {
+                e.preventDefault();
+                console.log('Upload image clicked');
+                uploadNewImage(e.target);
+                return;
+            }
         });
 
         // Function to initialize image picker for a dish element
@@ -509,9 +526,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Fallback: Manual file upload
-            console.log('Using fallback file upload');
-            uploadNewImage(imageInput, imagePreview);
+            // Fallback: Show message that Voyager media picker is not available
+            alert('Voyager media picker not available. Please use the Upload button instead.');
         }
 
         // Handle media selection from Voyager
@@ -539,8 +555,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        // Function to handle new image upload (fallback)
-        function uploadNewImage(imageInput, imagePreview) {
+        // FIXED: Function to handle new image upload with proper server upload
+        function uploadNewImage(button) {
+            const dishElement = button.closest('.menu-dish');
+            const imageInput = dishElement.querySelector('.menu-dish-image');
+            const imagePreview = dishElement.querySelector('.image-preview');
+            const progressContainer = dishElement.querySelector('.upload-progress');
+            const progressBar = progressContainer.querySelector('.progress-bar');
+            
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
@@ -549,21 +571,77 @@ document.addEventListener('DOMContentLoaded', function() {
             fileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    // Create a simple filename for storage
-                    const timestamp = Date.now();
-                    const fileName = `${timestamp}_${file.name}`;
+                    // Validate file size (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB');
+                        return;
+                    }
                     
-                    // For now, just show the filename - you'll need to implement actual upload
-                    imageInput.value = 'uploads/' + fileName;
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select a valid image file');
+                        return;
+                    }
                     
-                    // Show preview using FileReader
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        updateImagePreview(e.target.result, imagePreview);
-                    };
-                    reader.readAsDataURL(file);
+                    // Show progress bar
+                    progressContainer.style.display = 'block';
+                    progressBar.style.width = '0%';
                     
-                    console.log('File selected:', fileName, 'You need to implement server upload');
+                    // Create FormData for upload
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                    
+                    // Create XMLHttpRequest for upload with progress
+                    const xhr = new XMLHttpRequest();
+                    
+                    // Upload progress
+                    xhr.upload.addEventListener('progress', function(e) {
+                        if (e.lengthComputable) {
+                            const percentComplete = (e.loaded / e.total) * 100;
+                            progressBar.style.width = percentComplete + '%';
+                        }
+                    });
+                    
+                    // Upload complete
+                    xhr.addEventListener('load', function() {
+                        progressContainer.style.display = 'none';
+                        
+                        if (xhr.status === 200) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                if (response.success) {
+                                    // Update the input with the uploaded file path
+                                    imageInput.value = response.path;
+                                    updateImagePreview('/storage/' + response.path, imagePreview);
+                                    console.log('Image uploaded successfully:', response.path);
+                                } else {
+                                    alert('Upload failed: ' + (response.message || 'Unknown error'));
+                                }
+                            } catch (e) {
+                                console.error('Failed to parse upload response:', e);
+                                alert('Upload failed: Invalid server response');
+                            }
+                        } else {
+                            alert('Upload failed: Server error');
+                        }
+                    });
+                    
+                    // Upload error
+                    xhr.addEventListener('error', function() {
+                        progressContainer.style.display = 'none';
+                        alert('Upload failed: Network error');
+                    });
+                    
+                    // Send the upload request
+                    // First try to determine the correct URL
+                    const uploadUrl = window.location.pathname.includes('/admin') 
+                        ? '/admin/upload-menu-image' 
+                        : '/admin/upload-menu-image';
+                    
+                    console.log('Uploading to URL:', uploadUrl);
+                    xhr.open('POST', uploadUrl, true);
+                    xhr.send(formData);
                 }
                 document.body.removeChild(fileInput);
             });
@@ -622,5 +700,21 @@ document.addEventListener('DOMContentLoaded', function() {
     .menu-dish .remove-dish-btn:focus {
         outline: none;
         box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.5);
+    }
+    .upload-progress {
+        margin-top: 5px;
+    }
+    .progress {
+        height: 20px;
+        margin-bottom: 0;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,.1);
+    }
+    .progress-bar {
+        height: 100%;
+        background-color: #5cb85c;
+        border-radius: 4px;
+        transition: width 0.3s ease;
     }
 </style>
