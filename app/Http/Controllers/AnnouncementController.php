@@ -10,7 +10,7 @@ class AnnouncementController extends Controller
     /**
      * Retrieve a paginated list of published announcements.
      */
-    public function index(Request $request)
+    public function index()
     {
         $query = Announcement::withTranslation()->where('is_active', true)
             ->where('publish_at', '<=', now())
