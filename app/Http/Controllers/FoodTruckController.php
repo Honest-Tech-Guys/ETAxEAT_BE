@@ -82,6 +82,36 @@ class FoodTruckController extends Controller
             }
         ])->get();
 
+        if ($request->input('only_open')) {
+            $now = now();
+            $currentDay = strtolower($now->format('l')); // e.g., 'monday'
+            $currentTime = $now->setTimezone(config('app.timezone'))->format('H:i');
+
+            $foodTrucks = $foodTrucks->filter(function ($foodTruck) use ($currentDay, $currentTime) {
+                if (!$foodTruck->operating_hours) {
+                    return false;
+                }
+
+                $operatingHours = is_string($foodTruck->operating_hours)
+                    ? json_decode($foodTruck->operating_hours, true)
+                    : $foodTruck->operating_hours;
+
+                if (!isset($operatingHours[$currentDay]) || empty($operatingHours[$currentDay])) {
+                    return false;
+                }
+
+                foreach ($operatingHours[$currentDay] as $hours) {
+                    if (isset($hours['open']) && isset($hours['close'])) {
+                        if ($hours['open'] <= $currentTime && $hours['close'] > $currentTime) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            })->values();
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Food trucks filtered successfully.',

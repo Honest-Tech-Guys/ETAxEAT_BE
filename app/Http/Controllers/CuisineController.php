@@ -26,10 +26,8 @@ class CuisineController extends Controller
 
     public function filter(Request $request)
     {
-        // Start the query with the withTranslation() scope and filter active cuisines
         $query = Cuisine::withTranslation()->where('is_active', true);
-        
-        // Add distance filtering if location data is provided
+
         if ($request->has(['latitude', 'longitude', 'distance'])) {
             $validator = Validator::make($request->all(), [
                 'latitude' => 'required|numeric|between:-90,90',
@@ -53,46 +51,97 @@ class CuisineController extends Controller
                     ->orderBy('distance', 'asc');
             }
         }
-        
-        // UPDATED: Apply category filter for multiple selections
+
+        // Apply category filter for multiple selections
         if ($request->has('category') && !empty($request->input('category'))) {
-            $json = str_replace("'", '"', $request->input('category'));
-            $query->whereHas('categories', function ($q) use ($json) {
-                $q->whereIn('slug', json_decode($json, true));
-            });
+            $categories = is_array($request->input('category'))
+                ? $request->input('category')
+                : json_decode(str_replace("'", '"', $request->input('category')), true);
+            
+            if ($categories) {
+                $query->whereHas('categories', function ($q) use ($categories) {
+                    $q->whereIn('slug', $categories);
+                });
+            }
         }
-        
-        // UPDATED: Apply cuisine_type filter for multiple selections
+
+        // Apply cuisine_type filter for multiple selections
         if ($request->has('cuisine_type') && !empty($request->input('cuisine_type'))) {
-            $json = str_replace("'", '"', $request->input('cuisine_type'));
-            $query->whereHas('cuisineTypes', function ($q) use ($json) {
-                $q->whereIn('slug', json_decode($json, true));
-            });
+            $cuisineTypes = is_array($request->input('cuisine_type'))
+                ? $request->input('cuisine_type')
+                : json_decode(str_replace("'", '"', $request->input('cuisine_type')), true);
+            
+            if ($cuisineTypes) {
+                $query->whereHas('cuisineTypes', function ($q) use ($cuisineTypes) {
+                    $q->whereIn('slug', $cuisineTypes);
+                });
+            }
         }
 
-        // UPDATED: Apply dish_category filter for multiple selections
+        // Apply dish_category filter for multiple selections
         if ($request->has('dish_category') && !empty($request->input('dish_category'))) {
-            $json = str_replace("'", '"', $request->input('dish_category'));
-            $query->whereHas('dishCategories', function ($q) use ($json) {
-                $q->whereIn('slug', json_decode($json, true));
-            });
+            $dishCategories = is_array($request->input('dish_category'))
+                ? $request->input('dish_category')
+                : json_decode(str_replace("'", '"', $request->input('dish_category')), true);
+            
+            if ($dishCategories) {
+                $query->whereHas('dishCategories', function ($q) use ($dishCategories) {
+                    $q->whereIn('slug', $dishCategories);
+                });
+            }
         }
 
-        // UPDATED: Apply dish filter for multiple selections
+        // Apply dish filter for multiple selections
         if ($request->has('dish') && !empty($request->input('dish'))) {
-            $json = str_replace("'", '"', $request->input('dish'));
-            $query->whereHas('dishes', function ($q) use ($json) {
-                $q->whereIn('slug', json_decode($json, true));
-            });
+            $dishes = is_array($request->input('dish'))
+                ? $request->input('dish')
+                : json_decode(str_replace("'", '"', $request->input('dish')), true);
+            
+            if ($dishes) {
+                $query->whereHas('dishes', function ($q) use ($dishes) {
+                    $q->whereIn('slug', $dishes);
+                });
+            }
         }
 
-        // Eager load relationships and their translations
+        // Get cuisines first, then filter by operating hours in PHP
         $cuisines = $query->with([
             'categories' => function ($q) { $q->withTranslation(); },
             'dishes' => function ($q) { $q->withTranslation(); },
             'cuisineTypes' => function ($q) { $q->withTranslation(); },
             'dishCategories' => function ($q) { $q->withTranslation(); }
         ])->get();
+
+        // Filter by currently open cuisines using PHP
+        if ($request->input('only_open')) {
+            $now = now();
+            $currentDay = strtolower($now->format('l')); // e.g., 'monday'
+            $currentTime = $now->setTimezone(config('app.timezone'))->format('H:i');
+
+            $cuisines = $cuisines->filter(function ($cuisine) use ($currentDay, $currentTime) {
+                if (!$cuisine->operating_hours) {
+                    return false;
+                }
+
+                $operatingHours = is_string($cuisine->operating_hours)
+                    ? json_decode($cuisine->operating_hours, true)
+                    : $cuisine->operating_hours;
+
+                if (!isset($operatingHours[$currentDay]) || empty($operatingHours[$currentDay])) {
+                    return false;
+                }
+
+                foreach ($operatingHours[$currentDay] as $hours) {
+                    if (isset($hours['open']) && isset($hours['close'])) {
+                        if ($hours['open'] <= $currentTime && $hours['close'] > $currentTime) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            })->values(); // Re-index the collection
+        }
 
         return response()->json([
             'success' => true,
