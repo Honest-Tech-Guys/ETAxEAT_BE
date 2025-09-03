@@ -8,6 +8,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\FoodTruckController;
 use App\Http\Controllers\NatureProduceController;
 use App\Http\Controllers\RechargingStationController;
+use App\Http\Controllers\SettingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,3 +48,5 @@ Route::get('/nature-produces/filter', [NatureProduceController::class, 'filter']
 Route::get('/nature-produces/nearest', [NatureProduceController::class, 'getNearest']);
 
 Route::get('/announcements', [AnnouncementController::class, 'index']);
+
+Route::get('/settings', [SettingController::class, 'index']);
