@@ -12,7 +12,6 @@ class EventController extends Controller
     {
         $query = Event::withTranslation()->where('is_active', true);
 
-        // Add distance filtering if location data is provided
         if ($request->has(['latitude', 'longitude', 'distance'])) {
             $validator = Validator::make($request->all(), [
                 'latitude' => 'required|numeric|between:-90,90',
@@ -23,8 +22,8 @@ class EventController extends Controller
             if (!$validator->fails()) {
                 $latitude = $request->latitude;
                 $longitude = $request->longitude;
-                $distance = $request->distance;
-                $radius = 6371;
+                $maxDistance = $request->distance;
+                $radius = 6371; // Earth's radius in kilometers
 
                 $query->select('events.*')
                     ->selectRaw(
@@ -32,38 +31,77 @@ class EventController extends Controller
                         [$radius, $latitude, $longitude, $latitude]
                     )
                     ->whereNotNull(['latitude', 'longitude'])
-                    ->having('distance', '<=', $distance)
+                    ->having('distance', '<=', $maxDistance)
                     ->orderBy('distance', 'asc');
             }
         }
 
-        if ($request->has(['start_date', 'end_date'])) {
-            $validator = Validator::make($request->all(), [
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after_or_equal:start_date'
-            ]);
+        // Apply event_category filter
+        if ($request->has('event_category') && !empty($request->input('event_category'))) {
+            $eventCategories = is_array($request->input('event_category'))
+                ? $request->input('event_category')
+                : json_decode(str_replace("'", '"', $request->input('event_category')), true);
 
-            if (!$validator->fails()) {
-                $query->whereBetween('start_time', [$request->start_date, $request->end_date]);
+            if ($eventCategories) {
+                $query->whereHas('eventCategories', function ($q) use ($eventCategories) {
+                    $q->whereIn('slug', $eventCategories);
+                });
             }
         }
 
-        // Updated filters
-        if ($request->has('event_category') && !empty($request->input('event_category'))) {
-            $json = str_replace("'", '"', $request->input('event_category'));
-            $query->whereHas('eventCategories', function ($q) use ($json) {
-            $q->whereIn('slug', json_decode($json, true));
-            });
-        }
-
+        // Apply event_type filter
         if ($request->has('event_type') && !empty($request->input('event_type'))) {
-            $json = str_replace("'", '"', $request->input('event_type'));
-            $query->whereHas('eventTypes', function ($q) use ($json) {
-            $q->whereIn('slug', json_decode($json, true));
-            });
+            $eventTypes = is_array($request->input('event_type'))
+                ? $request->input('event_type')
+                : json_decode(str_replace("'", '"', $request->input('event_type')), true);
+
+            if ($eventTypes) {
+                $query->whereHas('eventTypes', function ($q) use ($eventTypes) {
+                    $q->whereIn('slug', $eventTypes);
+                });
+            }
         }
 
-        $events = $query->with(['eventCategories', 'eventTypes'])->get();
+        $events = $query->with([
+            'eventCategories' => function ($q) {
+                $q->withTranslation();
+            },
+            'eventTypes' => function ($q) {
+                $q->withTranslation();
+            },
+        ])->get();
+
+        $now = now();
+        $currentDay = strtolower($now->format('l')); // e.g., 'monday'
+        $currentTime = $now->setTimezone(config('app.timezone'))->format('H:i');
+
+        $events->each(function ($event) use ($currentDay, $currentTime) {
+            $isOpen = false;
+            if ($event->operating_hours) {
+                $operatingHours = is_string($event->operating_hours)
+                    ? json_decode($event->operating_hours, true)
+                    : $event->operating_hours;
+
+                if (isset($operatingHours[$currentDay]) && !empty($operatingHours[$currentDay])) {
+                    foreach ($operatingHours[$currentDay] as $hours) {
+                        if (isset($hours['open']) && isset($hours['close'])) {
+                            if ($hours['open'] <= $currentTime && $hours['close'] > $currentTime) {
+                                $isOpen = true;
+                                break; // Exit loop once an open slot is found
+                            }
+                        }
+                    }
+                }
+            }
+            $event->status = $isOpen ? 'open' : 'closed';
+        });
+
+
+        if ($request->input('only_open')) {
+            $events = $events->filter(function ($event) {
+                return $event->status === 'open';
+            })->values(); // Re-index the collection
+        }
 
         return response()->json([
             'success' => true,
@@ -71,7 +109,6 @@ class EventController extends Controller
             'data' => $events
         ]);
     }
-
     public function getNearest(Request $request)
     {
         $validator = Validator::make($request->all(), [

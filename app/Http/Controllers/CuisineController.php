@@ -112,34 +112,36 @@ class CuisineController extends Controller
             'dishCategories' => function ($q) { $q->withTranslation(); }
         ])->get();
 
-        // Filter by currently open cuisines using PHP
-        if ($request->input('only_open')) {
-            $now = now();
-            $currentDay = strtolower($now->format('l')); // e.g., 'monday'
-            $currentTime = $now->setTimezone(config('app.timezone'))->format('H:i');
+        $now = now();
+        $currentDay = strtolower($now->format('l')); // e.g., 'monday'
+        $currentTime = $now->setTimezone(config('app.timezone'))->format('H:i');
 
-            $cuisines = $cuisines->filter(function ($cuisine) use ($currentDay, $currentTime) {
-                if (!$cuisine->operating_hours) {
-                    return false;
-                }
-
+        $cuisines->each(function ($cuisine) use ($currentDay, $currentTime) {
+            $isOpen = false;
+            if ($cuisine->operating_hours) {
                 $operatingHours = is_string($cuisine->operating_hours)
                     ? json_decode($cuisine->operating_hours, true)
                     : $cuisine->operating_hours;
 
-                if (!isset($operatingHours[$currentDay]) || empty($operatingHours[$currentDay])) {
-                    return false;
-                }
-
-                foreach ($operatingHours[$currentDay] as $hours) {
-                    if (isset($hours['open']) && isset($hours['close'])) {
-                        if ($hours['open'] <= $currentTime && $hours['close'] > $currentTime) {
-                            return true;
+                if (isset($operatingHours[$currentDay]) && !empty($operatingHours[$currentDay])) {
+                    foreach ($operatingHours[$currentDay] as $hours) {
+                        if (isset($hours['open']) && isset($hours['close'])) {
+                            if ($hours['open'] <= $currentTime && $hours['close'] > $currentTime) {
+                                $isOpen = true;
+                                break; // Exit the loop as soon as we find an open slot
+                            }
                         }
                     }
                 }
+            }
+            $cuisine->status = $isOpen ? 'open' : 'closed';
+        });
 
-                return false;
+
+        // Filter by currently open cuisines using PHP
+        if ($request->input('only_open')) {
+            $cuisines = $cuisines->filter(function ($cuisine) {
+                return $cuisine->status === 'open';
             })->values(); // Re-index the collection
         }
 

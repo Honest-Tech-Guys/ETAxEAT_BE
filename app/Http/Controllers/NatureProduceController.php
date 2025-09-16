@@ -8,14 +8,10 @@ use Illuminate\Support\Facades\Validator;
 
 class NatureProduceController extends Controller
 {
-    /**
-     * Filter Nature Produce locations by producer type, product type, and/or distance.
-     */
     public function filter(Request $request)
     {
         $query = NatureProduce::withTranslation()->where('is_active', true);
 
-        // Add distance filtering if location data is provided
         if ($request->has(['latitude', 'longitude', 'distance'])) {
             $validator = Validator::make($request->all(), [
                 'latitude' => 'required|numeric|between:-90,90',
@@ -26,8 +22,8 @@ class NatureProduceController extends Controller
             if (!$validator->fails()) {
                 $latitude = $request->latitude;
                 $longitude = $request->longitude;
-                $maxDistance = $request->distance; // in kilometers
-                $radius = 6371; // Earth's radius
+                $maxDistance = $request->distance;
+                $radius = 6371; // Earth's radius in kilometers
 
                 $query->select('nature_produces.*')
                     ->selectRaw(
@@ -39,69 +35,78 @@ class NatureProduceController extends Controller
                     ->orderBy('distance', 'asc');
             }
         }
-
-        // Filter by Producer Type
+        
+        // Apply producer_type filter
         if ($request->has('producer_type') && !empty($request->input('producer_type'))) {
-            $json = str_replace("'", '"', $request->input('producer_type'));
-            $query->whereHas('producerTypes', function ($q) use ($json) {
-            $q->whereIn('slug', json_decode($json, true));
-            });
+            $producerTypes = is_array($request->input('producer_type'))
+                ? $request->input('producer_type')
+                : json_decode(str_replace("'", '"', $request->input('producer_type')), true);
+
+            if ($producerTypes) {
+                $query->whereHas('producerTypes', function ($q) use ($producerTypes) {
+                    $q->whereIn('slug', $producerTypes);
+                });
+            }
         }
 
-        // Filter by Product Type
+        // Apply product_type filter
         if ($request->has('product_type') && !empty($request->input('product_type'))) {
-            $json = str_replace("'", '"', $request->input('product_type'));
-            $query->whereHas('productTypes', function ($q) use ($json) {
-            $q->whereIn('slug', json_decode($json, true));
-            });
+            $productTypes = is_array($request->input('product_type'))
+                ? $request->input('product_type')
+                : json_decode(str_replace("'", '"', $request->input('product_type')), true);
+
+            if ($productTypes) {
+                $query->whereHas('productTypes', function ($q) use ($productTypes) {
+                    $q->whereIn('slug', $productTypes);
+                });
+            }
         }
 
-        $results = $query->with(['producerTypes', 'productTypes'])->get();
+
+        $natureProduces = $query->with([
+            'producerTypes' => function ($q) {
+                $q->withTranslation();
+            },
+            'productTypes' => function ($q) {
+                $q->withTranslation();
+            },
+        ])->get();
+
+        $now = now();
+        $currentDay = strtolower($now->format('l')); // e.g., 'monday'
+        $currentTime = $now->setTimezone(config('app.timezone'))->format('H:i');
+
+        $natureProduces->each(function ($natureProduce) use ($currentDay, $currentTime) {
+            $isOpen = false;
+            if ($natureProduce->operating_hours) {
+                $operatingHours = is_string($natureProduce->operating_hours)
+                    ? json_decode($natureProduce->operating_hours, true)
+                    : $natureProduce->operating_hours;
+
+                if (isset($operatingHours[$currentDay]) && !empty($operatingHours[$currentDay])) {
+                    foreach ($operatingHours[$currentDay] as $hours) {
+                        if (isset($hours['open']) && isset($hours['close'])) {
+                            if ($hours['open'] <= $currentTime && $hours['close'] > $currentTime) {
+                                $isOpen = true;
+                                break; // Exit loop once an open slot is found
+                            }
+                        }
+                    }
+                }
+            }
+            $natureProduce->status = $isOpen ? 'open' : 'closed';
+        });
+
+        if ($request->input('only_open')) {
+            $natureProduces = $natureProduces->filter(function ($natureProduce) {
+                return $natureProduce->status === 'open';
+            })->values(); // Re-index the collection
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Nature Produce locations filtered successfully.',
-            'data' => $results
-        ]);
-    }
-
-    /**
-     * Get the 5 nearest Nature Produce locations.
-     */
-    public function getNearest(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid latitude or longitude provided.',
-                'errors' => $validator->errors()
-            ], 400);
-        }
-
-        $latitude = $request->latitude;
-        $longitude = $request->longitude;
-        $radius = 6371;
-
-        $results = NatureProduce::query()
-            ->select('nature_produces.*')
-            ->selectRaw(
-                '(? * ACOS(COS(RADIANS(?)) * COS(RADIANS(latitude)) * COS(RADIANS(longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(latitude)))) AS distance',
-                [$radius, $latitude, $longitude, $latitude]
-            )
-            ->whereNotNull(['latitude', 'longitude'])
-            ->orderBy('distance', 'asc')
-            ->take(5)
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Nearest 5 Nature Produce locations retrieved successfully.',
-            'data' => $results
+            'message' => 'Nature produces filtered successfully.',
+            'data' => $natureProduces
         ]);
     }
 }
