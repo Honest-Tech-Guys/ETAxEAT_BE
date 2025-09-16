@@ -9,11 +9,11 @@ use TCG\Voyager\Traits\Translatable;
 class FoodTruck extends Model
 {
     use HasFactory , Translatable;
-    protected $translatable = ['name', 'description'];
+    protected $translatable = ['name', 'about', 'description'];
 
     protected $guarded = [];
 
-    protected $fillable = ['name', 'description', 'operating_hours', 'features', 'images', 'latitude', 'longitude', 'rating', 'is_active'];
+    protected $fillable = ['name', 'about' , 'description', 'operating_hours', 'features', 'images', 'latitude', 'longitude', 'rating', 'is_active'];
     protected $casts = [
         'operating_hours' => 'array',
         'features' => 'array',

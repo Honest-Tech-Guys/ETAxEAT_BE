@@ -9,7 +9,7 @@ use TCG\Voyager\Traits\Translatable;
 class Event extends Model
 {
     use HasFactory , Translatable;
-    protected $translatable = ['title', 'description'];
+    protected $translatable = ['name', 'about', 'description'];
 
     protected $guarded = [];
 
@@ -21,7 +21,7 @@ class Event extends Model
         'longitude' => 'decimal:8',
     ];
 
-    protected $fillable = ['title', 'description', 'start_time', 'end_time', 'images', 'latitude', 'longitude', 'is_active'];
+    protected $fillable = ['title', 'about' ,'description', 'start_time', 'end_time', 'images', 'latitude', 'longitude', 'is_active'];
     public function eventCategories()
     {
         return $this->belongsToMany(EventCategory::class, 'event_category_event');
