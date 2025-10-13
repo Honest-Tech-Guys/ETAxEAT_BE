@@ -9,11 +9,11 @@ use TCG\Voyager\Traits\Translatable;
 class NatureProduce extends Model
 {
     use HasFactory , Translatable;
-    protected $translatable = ['name', 'description'];
+    protected $translatable = ['name', 'description' , 'about'];
 
     protected $guarded = [];
 
-    protected $fillable = ['name', 'description', 'operating_hours', 'features', 'images', 'latitude', 'longitude', 'rating', 'is_active'];
+    protected $fillable = ['name', 'description', 'about', 'operating_hours', 'features', 'images', 'latitude', 'longitude', 'rating', 'is_active'];
     protected $casts = [
         'operating_hours' => 'array',
         'images' => 'array',
