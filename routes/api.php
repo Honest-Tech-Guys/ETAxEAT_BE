@@ -50,3 +50,7 @@ Route::get('/nature-produces/nearest', [NatureProduceController::class, 'getNear
 Route::get('/announcements', [AnnouncementController::class, 'index']);
 
 Route::get('/settings', [SettingController::class, 'index']);
+
+Route::get('/server-time', function () {
+    return response()->json(['server_time' => now()->toDateTimeString()]);
+});
